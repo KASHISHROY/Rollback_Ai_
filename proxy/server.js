@@ -85,23 +85,36 @@ app.post("/api/analyze-logs", async (req, res) => {
       return res.status(400).json({ error: "No logs provided" });
     }
 
-    const prompt = `
-You are a senior SRE.
+   const prompt = `
+You are a senior SRE assistant.
 
-Analyze logs and give:
-- root cause
-- impact
-- fix
-- prevention
-- severity
+Analyze the logs and respond in STRICT FORMAT:
+
+Return ONLY:
+
+Root Cause: 1-2 lines max
+Impact: 1-2 lines max
+Fix: 2-3 bullet points max
+Prevention: 2-3 bullet points max
+Severity: one word (Critical / High / Medium / Low)
+
+RULES:
+- Be extremely concise
+- No explanations
+- No numbering
+- No paragraphs
+- Max 120-150 words total
 
 Logs:
 ${logs.slice(-30).map(l =>
-  `Status:${l.statusCode} Path:${l.path} Msg:${typeof l.responseBody === "string"
-    ? l.responseBody
-    : JSON.stringify(l.responseBody)}`
+  `Status:${l.statusCode} Path:${l.path} Msg:${
+    typeof l.responseBody === "string"
+      ? l.responseBody
+      : JSON.stringify(l.responseBody)
+  }`
 ).join("\n")}
 `;
+
 
     const response = await fetch(
       "https://api.groq.com/openai/v1/chat/completions",

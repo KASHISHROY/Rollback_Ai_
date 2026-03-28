@@ -306,6 +306,7 @@ const Dashboard = () => {
             <div style={styles.headerHex}>⬡</div>
             <div>
               <div style={styles.headerTitle}>CANARY DEPLOYMENT MATRIX</div>
+              {/* ✅ FIXED: was #2a5a52, now readable */}
               <div style={styles.headerSub}>Real-time infrastructure monitoring · v2.4.1</div>
             </div>
           </div>
@@ -313,6 +314,7 @@ const Dashboard = () => {
             <div style={styles.liveDot} />
             <span style={styles.liveText}>LIVE</span>
             <div style={styles.headerDivider} />
+            {/* ✅ FIXED: was #2a5a52, now readable */}
             <span style={styles.headerTime}>{new Date().toLocaleTimeString()}</span>
           </div>
           <div style={styles.headerBorderBottom} />
@@ -336,9 +338,9 @@ const Dashboard = () => {
             <SectionHeader title="Traffic Mode Control" tag="LIVE" />
             <div style={styles.modeGrid}>
               {[
-                { key: 'stable', label: 'STABLE', sub: '0% canary', icon: '✓', color: '#00dc9b' },
+                { key: 'stable', label: 'STABLE', sub: '0% canary',   icon: '✓',  color: '#00dc9b' },
                 { key: 'test',   label: 'TEST',   sub: '100% canary', icon: '⚡', color: '#f59e0b' },
-                { key: 'canary', label: 'CANARY', sub: '10% canary', icon: '◈', color: '#00b4ff' },
+                { key: 'canary', label: 'CANARY', sub: '10% canary',  icon: '◈',  color: '#00b4ff' },
               ].map(m => (
                 <button key={m.key} onClick={() => changeMode(m.key)} style={{
                   ...styles.modeBtn,
@@ -351,10 +353,11 @@ const Dashboard = () => {
                 }}>
                   <span style={{ fontSize: 20 }}>{m.icon}</span>
                   <span style={{ fontFamily: "'Orbitron', monospace", fontSize: 12, letterSpacing: 3 }}>{m.label}</span>
-                  <span style={{ fontSize: 10, opacity: 0.5, fontFamily: 'monospace' }}>{m.sub}</span>
+                  <span style={{ fontSize: 10, opacity: 0.6, fontFamily: 'monospace' }}>{m.sub}</span>
                 </button>
               ))}
             </div>
+            {/* ✅ FIXED: was #1a4040, now readable */}
             <div style={styles.modeStatus}>
               ACTIVE_MODE: <span style={{ color: '#00dc9b' }}>{config.mode.toUpperCase()}</span>
             </div>
@@ -371,6 +374,7 @@ const Dashboard = () => {
             <span style={{ fontSize: 18 }}>⏮</span>
             <span style={{ fontFamily: "'Orbitron', monospace", letterSpacing: 2 }}>EXECUTE ROLLBACK → STABLE</span>
           </button>
+          {/* ✅ FIXED: was #1a2030 (invisible), now readable */}
           <div style={styles.rollbackInfo}>AUTO-TRIGGER · threshold: error_rate &gt; 20%</div>
         </div>
 
@@ -441,7 +445,8 @@ const Dashboard = () => {
                         {log.target?.includes('5001') ? 'stable' : 'canary'}
                       </td>
                       <td style={{ ...styles.td, color: '#00b4ff' }}>{log.duration}</td>
-                      <td style={{ ...styles.td, color: '#1a5a3a', fontSize: 10 }}>{log.ip}</td>
+                      {/* ✅ FIXED: IP was #1a5a3a (invisible), now readable */}
+                      <td style={{ ...styles.td, color: '#5aaa88', fontSize: 10 }}>{log.ip}</td>
                       <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: 10, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {typeof log.responseBody === 'string' ? log.responseBody.substring(0, 50) : 'ok'}
                       </td>
@@ -468,7 +473,7 @@ const globalStyles = `
   body { background: #000; overflow-x: hidden; cursor: crosshair; }
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #00dc9b22; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb { background: #00dc9b33; border-radius: 2px; }
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(20px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -486,15 +491,15 @@ const globalStyles = `
 
 // ── Styles ────────────────────────────────────────────────────────────────
 const styles = {
- shell: {
-  position: 'relative',
-  zIndex: 1,
-  maxWidth: 1400,
-  margin: '0 auto',
-  padding: '100px 24px 60px', // 👈 THIS is what you add
-  fontFamily: "'Share Tech Mono', monospace",
-  color: '#8ab4c0',
-},
+  shell: {
+    position: 'relative',
+    zIndex: 1,
+    maxWidth: 1400,
+    margin: '0 auto',
+    padding: '100px 24px 60px',
+    fontFamily: "'Share Tech Mono', monospace",
+    color: '#8ecfbf', // ✅ FIXED: was #8ab4c0, bumped brightness
+  },
   loading: {
     position: 'fixed', inset: 0, zIndex: 10,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -521,9 +526,10 @@ const styles = {
   headerHex: { fontSize: 42, color: '#00dc9b', animation: 'glowPulse 3s ease infinite' },
   headerTitle: {
     fontFamily: "'Orbitron', monospace", fontSize: 22, fontWeight: 900,
-    color: '#e0f0ee', letterSpacing: 4, textShadow: '0 0 40px rgba(0,220,155,0.3)',
+    color: '#e8f8f4', letterSpacing: 4, textShadow: '0 0 40px rgba(0,220,155,0.3)',
   },
-  headerSub: { fontSize: 11, color: '#2a5a52', letterSpacing: 2, marginTop: 4 },
+  // ✅ FIXED: was #2a5a52 (near-invisible), now readable
+  headerSub: { fontSize: 11, color: '#6ab8a8', letterSpacing: 2, marginTop: 4 },
   headerRight: { display: 'flex', alignItems: 'center', gap: 12 },
   liveDot: {
     width: 8, height: 8, borderRadius: '50%',
@@ -532,7 +538,8 @@ const styles = {
   },
   liveText: { fontFamily: "'Orbitron', monospace", fontSize: 11, color: '#00dc9b', letterSpacing: 3 },
   headerDivider: { width: 1, height: 20, background: '#ffffff10' },
-  headerTime: { fontSize: 12, color: '#2a5a52', fontFamily: 'monospace' },
+  // ✅ FIXED: was #2a5a52, now readable
+  headerTime: { fontSize: 12, color: '#6ab8a8', fontFamily: 'monospace' },
   headerBorderBottom: {
     position: 'absolute', bottom: 0, left: 0, right: 0, height: 1,
     background: 'linear-gradient(90deg, transparent, #00dc9b15, #00b4ff15, transparent)',
@@ -544,8 +551,8 @@ const styles = {
 
   metricCard: {
     position: 'relative', padding: '24px 20px',
-    background: 'rgba(0,8,16,0.25)',
-    border: '1px solid rgba(0,220,155,0.12)',
+    background: 'rgba(0,8,16,0.4)',
+    border: '1px solid rgba(0,220,155,0.15)',
     backdropFilter: 'blur(3px)',
     WebkitBackdropFilter: 'blur(3px)',
     display: 'flex', flexDirection: 'column', gap: 6,
@@ -560,14 +567,15 @@ const styles = {
     position: 'absolute', bottom: 0, right: 0, width: 12, height: 12,
     borderBottom: '2px solid var(--accent)', borderRight: '2px solid var(--accent)',
   },
-  metricLabel: { fontSize: 10, letterSpacing: 3, color: '#1a4a50', fontFamily: "'Orbitron', monospace" },
+  // ✅ FIXED: was #1a4a50 (near-invisible), now readable
+  metricLabel: { fontSize: 10, letterSpacing: 3, color: '#6ab8a8', fontFamily: "'Orbitron', monospace" },
   metricValue: { fontSize: 36, fontFamily: "'Orbitron', monospace", fontWeight: 900, lineHeight: 1 },
   metricBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 2 },
 
   section: {
     marginBottom: 32, padding: 24,
-    background: 'rgba(0,5,12,0.3)',
-    border: '1px solid rgba(0,150,120,0.07)',
+    background: 'rgba(0,5,12,0.45)',
+    border: '1px solid rgba(0,150,120,0.1)',
     backdropFilter: 'blur(3px)',
     WebkitBackdropFilter: 'blur(3px)',
     animation: 'fadeUp 0.5s ease backwards',
@@ -575,57 +583,63 @@ const styles = {
   sectionHeader: {
     display: 'flex', alignItems: 'center', gap: 10,
     marginBottom: 20, paddingBottom: 12,
-    borderBottom: '1px solid rgba(0,220,155,0.05)',
+    borderBottom: '1px solid rgba(0,220,155,0.07)',
   },
   sectionSlash: { color: '#00dc9b', fontFamily: "'Orbitron', monospace", fontSize: 14 },
-  sectionTitle: { fontFamily: "'Orbitron', monospace", fontSize: 13, color: '#9fd8cc', letterSpacing: 2 },
+  sectionTitle: { fontFamily: "'Orbitron', monospace", fontSize: 13, color: '#b8e8d8', letterSpacing: 2 },
   sectionTag: {
     fontSize: 9, letterSpacing: 2, padding: '3px 8px',
-    border: '1px solid #00dc9b28', color: '#00dc9b',
+    border: '1px solid #00dc9b33', color: '#00dc9b',
     fontFamily: "'Orbitron', monospace",
   },
-  sectionLine: { flex: 1, height: 1, background: 'linear-gradient(90deg, #00dc9b08, transparent)' },
+  sectionLine: { flex: 1, height: 1, background: 'linear-gradient(90deg, #00dc9b10, transparent)' },
 
   modeGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 },
   modeBtn: {
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
     padding: '20px 16px',
-    background: 'rgba(255,255,255,0.015)',
-    border: '1px solid rgba(255,255,255,0.05)',
-    color: '#3a6a62', cursor: 'pointer',
+    background: 'rgba(255,255,255,0.02)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    // ✅ FIXED: was #3a6a62 (dim), now clearly readable
+    color: '#7ecfbe', cursor: 'pointer',
     transition: 'all 0.2s ease', fontFamily: 'monospace',
   },
-  modeStatus: { fontSize: 11, color: '#1a4040', letterSpacing: 2, fontFamily: 'monospace' },
+  // ✅ FIXED: was #1a4040 (invisible), now readable
+  modeStatus: { fontSize: 11, color: '#5aaa88', letterSpacing: 2, fontFamily: 'monospace' },
 
   rollbackBtn: {
     display: 'flex', alignItems: 'center', gap: 12,
     padding: '16px 32px', marginBottom: 12,
     background: 'rgba(255,51,85,0.05)',
-    border: '1px solid #ff335533', color: '#ff3355',
+    border: '1px solid #ff335544', color: '#ff3355',
     cursor: 'pointer', fontFamily: "'Share Tech Mono', monospace", fontSize: 14,
     letterSpacing: 1, boxShadow: '0 0 20px #ff335522',
     transition: 'box-shadow 0.2s ease',
   },
-  rollbackInfo: { fontSize: 11, color: '#1a2030', letterSpacing: 2, fontFamily: 'monospace' },
+  // ✅ FIXED: was #1a2030 (invisible), now readable
+  rollbackInfo: { fontSize: 11, color: '#5a7888', letterSpacing: 2, fontFamily: 'monospace' },
 
   tableWrap: { overflowX: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 12 },
+  // ✅ FIXED: was #0a4038 (nearly black on dark bg), now clearly visible
   th: {
     padding: '10px 12px', textAlign: 'left',
     fontFamily: "'Orbitron', monospace", fontSize: 9, letterSpacing: 2,
-    color: '#0a4038', borderBottom: '1px solid rgba(0,220,155,0.05)',
+    color: '#4a9888', borderBottom: '1px solid rgba(0,220,155,0.08)',
     fontWeight: 400,
   },
-  tr: { borderBottom: '1px solid rgba(255,255,255,0.02)', transition: 'background 0.15s' },
-  trError: { background: 'rgba(255,51,85,0.03)' },
-  td: { padding: '10px 12px', color: '#3a6a62', verticalAlign: 'middle' },
+  tr: { borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.15s' },
+  trError: { background: 'rgba(255,51,85,0.04)' },
+  // ✅ FIXED: was #3a6a62 (dim), now clearly readable
+  td: { padding: '10px 12px', color: '#8ecfbf', verticalAlign: 'middle' },
   badge: { padding: '2px 8px', fontSize: 11, fontFamily: 'monospace', display: 'inline-block' },
 
+  // ✅ FIXED: was #081818 (virtually black), now subtle but visible
   footer: {
     textAlign: 'center', padding: '24px 0',
-    fontSize: 10, letterSpacing: 4, color: '#081818',
+    fontSize: 10, letterSpacing: 4, color: '#3a8878',
     fontFamily: "'Orbitron', monospace",
-    borderTop: '1px solid rgba(0,220,155,0.03)',
+    borderTop: '1px solid rgba(0,220,155,0.05)',
   },
 };
 
