@@ -58,7 +58,6 @@ app.get("/api/config", (req, res) => {
   res.json(getConfig());
 });
 
-// ✅ FIXED: was returning 404, now returns rollback history
 app.get("/api/rollback-history", (req, res) => {
   res.json({ history: autoRollback.getRollbackHistory() });
 });
@@ -76,7 +75,6 @@ app.post("/api/config", (req, res) => {
   res.json({ success: true });
 });
 
-
 app.post("/api/analyze-logs", async (req, res) => {
   try {
     const { logs } = req.body;
@@ -85,36 +83,63 @@ app.post("/api/analyze-logs", async (req, res) => {
       return res.status(400).json({ error: "No logs provided" });
     }
 
-   const prompt = `
-You are a senior SRE assistant.
+    // Build error summary for the prompt
+    const errorLogs = logs.filter(l => l.statusCode >= 400);
+    const errorCounts = {};
+    errorLogs.forEach(l => {
+      errorCounts[l.statusCode] = (errorCounts[l.statusCode] || 0) + 1;
+    });
+    const errorRate = logs.length > 0
+      ? ((errorLogs.length / logs.length) * 100).toFixed(1)
+      : 0;
 
-Analyze the logs and respond in STRICT FORMAT:
+    const prompt = `You are a senior SRE assistant analyzing HTTP logs.
+Respond ONLY in this exact format — no extra text, no explanations.
 
-Return ONLY:
+TOTAL_REQUESTS: ${logs.length}
+TOTAL_ERRORS: ${errorLogs.length}
+ERROR_RATE: ${errorRate}%
 
-Root Cause: 1-2 lines max
-Impact: 1-2 lines max
-Fix: 2-3 bullet points max
-Prevention: 2-3 bullet points max
-Severity: one word (Critical / High / Medium / Low)
+LOG SAMPLE (last 30 errors):
+${logs
+  .filter(l => l.statusCode >= 400)
+  .slice(-30)
+  .map(l =>
+    `Status:${l.statusCode} Path:${l.path} Backend:${
+      l.target?.includes("5001") ? "stable" : "canary"
+    } Msg:${
+      typeof l.responseBody === "string"
+        ? l.responseBody.substring(0, 80)
+        : JSON.stringify(l.responseBody).substring(0, 80)
+    }`
+  )
+  .join("\n")}
 
-RULES:
-- Be extremely concise
-- No explanations
-- No numbering
-- No paragraphs
-- Max 120-150 words total
-
-Logs:
-${logs.slice(-30).map(l =>
-  `Status:${l.statusCode} Path:${l.path} Msg:${
-    typeof l.responseBody === "string"
-      ? l.responseBody
-      : JSON.stringify(l.responseBody)
-  }`
-).join("\n")}
-`;
-
+Return EXACTLY this structure (fill every field):
+ERROR_1_CODE: <HTTP status code>
+ERROR_1_BACKEND: <stable or canary>
+ERROR_1_FREQUENCY: <N occurrences>
+ERROR_1_PERCENTAGE: <X% of all requests>
+ERROR_1_SEVERITY: <CRITICAL or HIGH or MEDIUM or LOW>
+ERROR_1_CAUSE: <1 sentence root cause>
+ERROR_1_FIX: <1 sentence fix>
+ERROR_2_CODE: <HTTP status code>
+ERROR_2_BACKEND: <stable or canary>
+ERROR_2_FREQUENCY: <N occurrences>
+ERROR_2_PERCENTAGE: <X% of all requests>
+ERROR_2_SEVERITY: <CRITICAL or HIGH or MEDIUM or LOW>
+ERROR_2_CAUSE: <1 sentence root cause>
+ERROR_2_FIX: <1 sentence fix>
+ERROR_3_CODE: <HTTP status code>
+ERROR_3_BACKEND: <stable or canary>
+ERROR_3_FREQUENCY: <N occurrences>
+ERROR_3_PERCENTAGE: <X% of all requests>
+ERROR_3_SEVERITY: <CRITICAL or HIGH or MEDIUM or LOW>
+ERROR_3_CAUSE: <1 sentence root cause>
+ERROR_3_FIX: <1 sentence fix>
+OVERALL_HEALTH: <good or fair or poor or critical>
+RECOMMENDATION: <1 sentence action to take>
+RISK_LEVEL: <low or medium or high or critical>`;
 
     const response = await fetch(
       "https://api.groq.com/openai/v1/chat/completions",
@@ -127,7 +152,7 @@ ${logs.slice(-30).map(l =>
         body: JSON.stringify({
           model: "llama-3.1-8b-instant",
           messages: [{ role: "user", content: prompt }],
-          temperature: 0.3,
+          temperature: 0.2,
         }),
       }
     );
@@ -138,14 +163,13 @@ ${logs.slice(-30).map(l =>
       return res.status(500).json({ error: "Groq failed" });
     }
 
-    res.json({
-      result: data.choices[0].message.content,
-    });
+    res.json({ result: data.choices[0].message.content });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Analysis failed" });
   }
 });
+
 
 // ✅ DEBUG: force ingest all logs
 app.post("/api/debug/ingest", async (req, res) => {
@@ -208,16 +232,25 @@ Give STRICT output:
 
 ERROR_1_CODE:
 ERROR_1_BACKEND:
+ERROR_1_FREQUENCY:
+ERROR_1_PERCENTAGE:
+ERROR_1_SEVERITY:
 ERROR_1_CAUSE:
 ERROR_1_FIX:
 
 ERROR_2_CODE:
 ERROR_2_BACKEND:
+ERROR_2_FREQUENCY:
+ERROR_2_PERCENTAGE:
+ERROR_2_SEVERITY:
 ERROR_2_CAUSE:
 ERROR_2_FIX:
 
 ERROR_3_CODE:
 ERROR_3_BACKEND:
+ERROR_3_FREQUENCY:
+ERROR_3_PERCENTAGE:
+ERROR_3_SEVERITY:
 ERROR_3_CAUSE:
 ERROR_3_FIX:
 
