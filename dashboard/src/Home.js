@@ -164,9 +164,9 @@ function FeatureCard({ icon, title, desc, accent, delay }) {
       style={{
         position: 'relative',
         padding: '28px 24px',
-        background: hovered ? `rgba(0,8,20,0.7)` : 'rgba(0,5,12,0.4)',
-        border: `1px solid ${hovered ? accent : 'rgba(0,150,120,0.1)'}`,
-        backdropFilter: 'blur(4px)',
+        background: hovered ? `rgba(0,8,20,0.85)` : 'rgba(0,5,12,0.6)',
+        border: `1px solid ${hovered ? accent : 'rgba(0,200,160,0.18)'}`,
+        backdropFilter: 'blur(8px)',
         transition: 'all 0.3s ease',
         boxShadow: hovered ? `0 0 32px ${accent}22, inset 0 0 32px ${accent}06` : 'none',
         animationDelay: delay,
@@ -185,8 +185,10 @@ function FeatureCard({ icon, title, desc, accent, delay }) {
         transition: 'text-shadow 0.3s',
       }}>{title}</div>
       <div style={{
-        fontFamily: "'Share Tech Mono', monospace", fontSize: 12,
-        color: '#3a6a62', lineHeight: 1.8, letterSpacing: 0.5,
+        fontFamily: "'Share Tech Mono', monospace", fontSize: 13,
+        /* ✅ FIXED: was #3a6a62 (near-invisible), now bright readable grey-green */
+        color: '#8ecfbf',
+        lineHeight: 1.8, letterSpacing: 0.5,
       }}>{desc}</div>
     </div>
   );
@@ -205,14 +207,16 @@ function StatBlock({ value, suffix, label, accent }) {
       </div>
       <div style={{
         fontFamily: "'Share Tech Mono', monospace", fontSize: 11,
-        color: '#2a5a52', letterSpacing: 3, textTransform: 'uppercase',
+        /* ✅ FIXED: was #2a5a52 (nearly invisible), now legible */
+        color: '#6ab8a8',
+        letterSpacing: 3, textTransform: 'uppercase',
       }}>{label}</div>
     </div>
   );
 }
 
 // ── Main Home Component ───────────────────────────────────────────────────────
-const Home = ({ onEnterDashboard , onGoWorkflow }) => {
+const Home = ({ onEnterDashboard, onGoWorkflow }) => {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -224,7 +228,6 @@ const Home = ({ onEnterDashboard , onGoWorkflow }) => {
       <style>{css}</style>
       <ParticleBackground />
 
-    
       {/* ── PAGE CONTENT ── */}
       <div style={{
         position: 'relative', zIndex: 1,
@@ -241,8 +244,8 @@ const Home = ({ onEnterDashboard , onGoWorkflow }) => {
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             padding: '6px 16px',
-            border: '1px solid rgba(0,220,155,0.2)',
-            background: 'rgba(0,220,155,0.04)',
+            border: '1px solid rgba(0,220,155,0.3)',
+            background: 'rgba(0,220,155,0.07)',
             marginBottom: 40, animation: 'fadeUp 0.5s ease backwards',
           }}>
             <div style={{
@@ -258,8 +261,8 @@ const Home = ({ onEnterDashboard , onGoWorkflow }) => {
             fontFamily: "'Orbitron', monospace",
             fontSize: 'clamp(36px, 7vw, 88px)',
             fontWeight: 900, lineHeight: 1.05,
-            color: '#e0f0ee', letterSpacing: 4,
-            textShadow: '0 0 60px rgba(0,220,155,0.15)',
+            color: '#e8f8f4', letterSpacing: 4,
+            textShadow: '0 0 60px rgba(0,220,155,0.2)',
             marginBottom: 12,
             animation: 'fadeUp 0.5s 0.1s ease backwards',
           }}>
@@ -267,20 +270,22 @@ const Home = ({ onEnterDashboard , onGoWorkflow }) => {
             <span style={{ color: '#00b4ff', textShadow: '0 0 40px #00b4ff' }}>AI</span>
           </h1>
 
+          {/* ✅ FIXED: was #2a7a6a (hard to read), now bright teal */}
           <p style={{
             fontFamily: "'Share Tech Mono', monospace",
             fontSize: 'clamp(13px, 2vw, 18px)',
-            color: '#2a7a6a', letterSpacing: 3,
+            color: '#7dd8c8', letterSpacing: 3,
             marginBottom: 8,
             animation: 'fadeUp 0.5s 0.2s ease backwards',
           }}>
             Intelligent log analysis · canary deployment · auto-rollback
           </p>
 
+          {/* ✅ FIXED: was #1a4a40 (near-black on dark bg), now readable */}
           <p style={{
             fontFamily: "'Share Tech Mono', monospace",
             fontSize: 'clamp(11px, 1.4vw, 14px)',
-            color: '#1a4a40', letterSpacing: 2,
+            color: '#5ab8a5', letterSpacing: 2,
             maxWidth: 680, lineHeight: 1.9,
             marginBottom: 52,
             animation: 'fadeUp 0.5s 0.3s ease backwards',
@@ -318,12 +323,11 @@ const Home = ({ onEnterDashboard , onGoWorkflow }) => {
               ⬡ VIEW DASHBOARD
             </button>
             <button
-
               onClick={onGoWorkflow}
               style={{
                 padding: '16px 36px',
                 background: 'transparent',
-                border: '1px solid rgba(0,180,255,0.3)',
+                border: '1px solid rgba(0,180,255,0.4)',
                 color: '#00b4ff',
                 fontFamily: "'Orbitron', monospace",
                 fontSize: 12, letterSpacing: 3,
@@ -336,7 +340,7 @@ const Home = ({ onEnterDashboard , onGoWorkflow }) => {
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.borderColor = 'rgba(0,180,255,0.3)';
+                e.currentTarget.style.borderColor = 'rgba(0,180,255,0.4)';
                 e.currentTarget.style.boxShadow = 'none';
               }}
             >
@@ -349,17 +353,18 @@ const Home = ({ onEnterDashboard , onGoWorkflow }) => {
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
             animation: 'fadeUp 0.5s 0.8s ease backwards',
           }}>
-            <span style={{ fontFamily: "'Orbitron', monospace", fontSize: 8, color: '#1a4040', letterSpacing: 3 }}>SCROLL</span>
-            <div style={{ width: 1, height: 32, background: 'linear-gradient(180deg, #00dc9b44, transparent)', animation: 'scrollPulse 2s ease infinite' }} />
+            {/* ✅ FIXED: was #1a4040, now visible */}
+            <span style={{ fontFamily: "'Orbitron', monospace", fontSize: 8, color: '#4a9080', letterSpacing: 3 }}>SCROLL</span>
+            <div style={{ width: 1, height: 32, background: 'linear-gradient(180deg, #00dc9b66, transparent)', animation: 'scrollPulse 2s ease infinite' }} />
           </div>
         </section>
 
         {/* ── STATS ── */}
         <section id="stats" style={{
           padding: '60px 24px',
-          borderTop: '1px solid rgba(0,220,155,0.05)',
-          borderBottom: '1px solid rgba(0,220,155,0.05)',
-          background: 'rgba(0,5,12,0.3)',
+          borderTop: '1px solid rgba(0,220,155,0.08)',
+          borderBottom: '1px solid rgba(0,220,155,0.08)',
+          background: 'rgba(0,5,12,0.5)',
         }}>
           <div style={{
             maxWidth: 1000, margin: '0 auto',
@@ -381,33 +386,35 @@ const Home = ({ onEnterDashboard , onGoWorkflow }) => {
             </div>
             <h2 style={{
               fontFamily: "'Orbitron', monospace", fontSize: 'clamp(22px, 4vw, 36px)',
-              fontWeight: 900, color: '#e0f0ee', letterSpacing: 3, marginBottom: 16,
+              fontWeight: 900, color: '#e8f8f4', letterSpacing: 3, marginBottom: 16,
             }}>
               Everything your infra needs
             </h2>
+            {/* ✅ FIXED: was #2a5a52, now readable */}
             <p style={{
               fontFamily: "'Share Tech Mono', monospace", fontSize: 13,
-              color: '#2a5a52', maxWidth: 520, margin: '0 auto', lineHeight: 1.8, letterSpacing: 1,
+              color: '#7ecfbe', maxWidth: 520, margin: '0 auto', lineHeight: 1.8, letterSpacing: 1,
             }}>
               One platform to monitor, analyse, and control your deployment pipeline — powered by AI at every layer.
             </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
-            <FeatureCard delay="0s"    accent="#00dc9b" icon="🔬" title="AI LOG ANALYSIS"      desc="Cluster similar failures automatically. Get plain-English root cause reports generated by Groq AI in seconds, not hours of manual triage." />
-            <FeatureCard delay="0.08s" accent="#00b4ff" icon="⬡"  title="CANARY DEPLOYMENT"    desc="Gradually shift traffic between stable and canary builds. Fine-tune split percentages with one click — no config file edits required." />
-            <FeatureCard delay="0.16s" accent="#ff3355" icon="⏮"  title="AUTO ROLLBACK"        desc="Crosses the error-rate threshold? Instantly rolls back to stable automatically — before your users even notice something went wrong." />
-            <FeatureCard delay="0.24s" accent="#f59e0b" icon="📈"  title="REAL-TIME TIMELINE"   desc="Full request timeline across your entire log history. Adaptive bucket sizes from seconds to days. Error rates visualised at a glance." />
-            <FeatureCard delay="0.32s" accent="#a78bfa" icon="🗂️" title="FAILURE CLUSTERING"   desc="Groups repeated errors by status code and message fingerprint. See which backends are affected, which paths, and exactly when it started." />
-            <FeatureCard delay="0.40s" accent="#00dc9b" icon="📋"  title="PASTE & UPLOAD LOGS" desc="Not running live? Paste JSON log lines or upload .log / .txt / .json files. Full analysis pipeline works on any historical data instantly." />
+            <FeatureCard delay="0s"    accent="#00dc9b" icon="🔬" title="AI LOG ANALYSIS"         desc="Cluster similar failures automatically. Get plain-English root cause reports generated by Groq AI in seconds, not hours of manual triage." />
+            <FeatureCard delay="0.08s" accent="#00b4ff" icon="⬡"  title="CANARY DEPLOYMENT"       desc="Gradually shift traffic between stable and canary builds. Fine-tune split percentages with one click — no config file edits required." />
+            <FeatureCard delay="0.16s" accent="#ff3355" icon="⏮"  title="AUTO ROLLBACK"           desc="Crosses the error-rate threshold? Instantly rolls back to stable automatically — before your users even notice something went wrong." />
+            <FeatureCard delay="0.24s" accent="#f59e0b" icon="📈"  title="REAL-TIME TIMELINE"      desc="Full request timeline across your entire log history. Adaptive bucket sizes from seconds to days. Error rates visualised at a glance." />
+            <FeatureCard delay="0.32s" accent="#a78bfa" icon="🗂️" title="FAILURE CLUSTERING"      desc="Groups repeated errors by status code and message fingerprint. See which backends are affected, which paths, and exactly when it started." />
+            <FeatureCard delay="0.40s" accent="#00dc9b" icon="📋"  title="PASTE & UPLOAD LOGS"    desc="Not running live? Paste JSON log lines or upload .log / .txt / .json files. Full analysis pipeline works on any historical data instantly." />
+            <FeatureCard delay="0.42s" accent="#00ffcc" icon="🛠️" title="AI CODE PATCH GENERATOR" desc="Generates fix → tests in sandbox → deploys after approval." />
           </div>
         </section>
 
         {/* ── HOW IT WORKS ── */}
         <section id="how-it-works" style={{
           padding: '100px 24px',
-          background: 'rgba(0,5,12,0.35)',
-          borderTop: '1px solid rgba(0,220,155,0.05)',
-          borderBottom: '1px solid rgba(0,220,155,0.05)',
+          background: 'rgba(0,5,12,0.5)',
+          borderTop: '1px solid rgba(0,220,155,0.08)',
+          borderBottom: '1px solid rgba(0,220,155,0.08)',
         }}>
           <div style={{ maxWidth: 900, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 64 }}>
@@ -416,28 +423,28 @@ const Home = ({ onEnterDashboard , onGoWorkflow }) => {
               </div>
               <h2 style={{
                 fontFamily: "'Orbitron', monospace", fontSize: 'clamp(22px, 4vw, 36px)',
-                fontWeight: 900, color: '#e0f0ee', letterSpacing: 3,
+                fontWeight: 900, color: '#e8f8f4', letterSpacing: 3,
               }}>
                 How it works
               </h2>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
               {[
-                { step: '01', title: 'TRAFFIC INGRESS',    desc: 'All requests flow through the LogWatch proxy. Every request is timestamped, tagged with backend identity, and logged in real time.',                           accent: '#00dc9b' },
-                { step: '02', title: 'CANARY SPLITTING',   desc: 'Configurable traffic weights route a percentage of requests to the canary build. Switch between stable, 10% canary, or 100% test mode instantly.',           accent: '#00b4ff' },
-                { step: '03', title: 'ANOMALY DETECTION',  desc: 'Error rates are tracked per time window. When the threshold is crossed, auto-rollback triggers immediately and the event is logged.',                         accent: '#f59e0b' },
-                { step: '04', title: 'AI INCIDENT REPORT', desc: 'Logs are sent to Groq AI which returns a structured incident report: what broke, why, which backend, and the recommended fix.',                               accent: '#a78bfa' },
-                 { step: '05', title: 'AI CODE PATCH SOLVER', desc: 'Generates fix → tests in sandbox → deploys after approval.',                               accent: '#a78bfa' },
+                { step: '01', title: 'TRAFFIC INGRESS',         desc: 'All requests flow through the LogWatch proxy. Every request is timestamped, tagged with backend identity, and logged in real time.',                         accent: '#00dc9b' },
+                { step: '02', title: 'CANARY SPLITTING',        desc: 'Configurable traffic weights route a percentage of requests to the canary build. Switch between stable, 10% canary, or 100% test mode instantly.',         accent: '#00b4ff' },
+                { step: '03', title: 'ANOMALY DETECTION',       desc: 'Error rates are tracked per time window. When the threshold is crossed, auto-rollback triggers immediately and the event is logged.',                       accent: '#f59e0b' },
+                { step: '04', title: 'AI INCIDENT REPORT',      desc: 'Logs are sent to Groq AI which returns a structured incident report: what broke, why, which backend, and the recommended fix.',                             accent: '#a78bfa' },
+                { step: '05', title: 'AI CODE PATCH GENERATOR', desc: 'Generates fix → tests in sandbox → deploys after approval.',                                                                                                 accent: '#00ffcc' },
               ].map((item, i) => (
                 <div key={i} style={{
                   display: 'flex', gap: 32, alignItems: 'flex-start',
                   padding: '32px 0',
-                  borderBottom: i < 3 ? '1px solid rgba(0,220,155,0.05)' : 'none',
+                  borderBottom: i < 4 ? '1px solid rgba(0,220,155,0.07)' : 'none',
                   animation: `fadeUp 0.5s ${i * 0.1}s ease backwards`,
                 }}>
                   <div style={{
                     fontFamily: "'Orbitron', monospace", fontSize: 42, fontWeight: 900,
-                    color: item.accent, opacity: 0.15, lineHeight: 1,
+                    color: item.accent, opacity: 0.22, lineHeight: 1,
                     flexShrink: 0, width: 80, textAlign: 'right',
                   }}>{item.step}</div>
                   <div>
@@ -445,9 +452,10 @@ const Home = ({ onEnterDashboard , onGoWorkflow }) => {
                       fontFamily: "'Orbitron', monospace", fontSize: 12, fontWeight: 700,
                       color: item.accent, letterSpacing: 3, marginBottom: 10,
                     }}>{item.title}</div>
+                    {/* ✅ FIXED: was #3a6a62, now clearly readable */}
                     <div style={{
                       fontFamily: "'Share Tech Mono', monospace", fontSize: 13,
-                      color: '#3a6a62', lineHeight: 1.9, letterSpacing: 0.5,
+                      color: '#8ecfbf', lineHeight: 1.9, letterSpacing: 0.5,
                     }}>{item.desc}</div>
                   </div>
                 </div>
@@ -464,15 +472,16 @@ const Home = ({ onEnterDashboard , onGoWorkflow }) => {
           <h2 style={{
             fontFamily: "'Orbitron', monospace",
             fontSize: 'clamp(24px, 5vw, 48px)',
-            fontWeight: 900, color: '#e0f0ee',
+            fontWeight: 900, color: '#e8f8f4',
             letterSpacing: 3, marginBottom: 20, lineHeight: 1.2,
           }}>
             Your infra deserves<br />
             <span style={{ color: '#00dc9b', textShadow: '0 0 30px #00dc9b88' }}>real intelligence.</span>
           </h2>
+          {/* ✅ FIXED: was #2a5a52, now readable */}
           <p style={{
             fontFamily: "'Share Tech Mono', monospace", fontSize: 13,
-            color: '#2a5a52', letterSpacing: 2, lineHeight: 1.9, marginBottom: 40,
+            color: '#7ecfbe', letterSpacing: 2, lineHeight: 1.9, marginBottom: 40,
           }}>
             Stop manually reading logs. Let LogWatch AI surface what matters,<br />
             roll back what breaks, and explain what went wrong — automatically.
@@ -505,21 +514,22 @@ const Home = ({ onEnterDashboard , onGoWorkflow }) => {
 
         {/* ── FOOTER ── */}
         <footer style={{
-          borderTop: '1px solid rgba(0,220,155,0.05)',
+          borderTop: '1px solid rgba(0,220,155,0.08)',
           padding: '32px 40px',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           flexWrap: 'wrap', gap: 16,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ color: '#00dc9b', fontSize: 16 }}>⬡</span>
-            <span style={{ fontFamily: "'Orbitron', monospace", fontSize: 11, color: '#1a4040', letterSpacing: 2 }}>
+            <span style={{ fontFamily: "'Orbitron', monospace", fontSize: 11, color: '#4aaa90', letterSpacing: 2 }}>
               LogWatch<span style={{ color: '#00dc9b' }}>AI</span>
             </span>
           </div>
-          <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: '#0a2828', letterSpacing: 2 }}>
+          {/* ✅ FIXED: was #0a2828 (virtually invisible), now soft readable grey */}
+          <div style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 10, color: '#4a9080', letterSpacing: 2 }}>
             RAG · PINECONE · GROQ · {new Date().getFullYear()}
           </div>
-          <div style={{ fontFamily: "'Orbitron', monospace", fontSize: 9, color: '#0a2828', letterSpacing: 2 }}>
+          <div style={{ fontFamily: "'Orbitron', monospace", fontSize: 9, color: '#4a9080', letterSpacing: 2 }}>
             BUILT FOR ZERO-DOWNTIME TEAMS
           </div>
         </footer>
@@ -535,7 +545,7 @@ const css = `
   body { background: #000305; overflow-x: hidden; cursor: crosshair; }
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #00dc9b22; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb { background: #00dc9b33; border-radius: 2px; }
 
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(24px); }
