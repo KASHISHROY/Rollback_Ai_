@@ -1,4 +1,4 @@
-## Setup
+## Setup.
 ```bash
 # Install dependencies in each folder
 cd proxy && npm install
