@@ -8,6 +8,9 @@ const EnhancedLogger = require("./enhanced-logger");
 const ErrorTracker = require("./error-tracker");
 const AutoRollback = require("./auto-rollback");
 
+const { ingestLogs } = require("./rag/ingest");
+const { retrieveRelevantLogs } = require("./rag/retriever");
+
 const app = express();
 const proxy = httpProxy.createProxyServer({});
 
@@ -18,7 +21,6 @@ const autoRollback = new AutoRollback(20);
 app.use(express.json());
 app.use(cors());
 
-// Track request start time
 app.use((req, res, next) => {
   req.startTime = Date.now();
   next();
@@ -27,10 +29,8 @@ app.use((req, res, next) => {
 // ===== CONFIG =====
 const getConfig = () => {
   try {
-    const data = fs.readFileSync("./config.json", "utf8");
-    return JSON.parse(data);
-  } catch (err) {
-    console.error("[ERROR] Reading config:", err.message);
+    return JSON.parse(fs.readFileSync("./config.json", "utf8"));
+  } catch {
     return {
       mode: "stable",
       stable_url: "http://127.0.0.1:5001",
@@ -41,247 +41,218 @@ const getConfig = () => {
 };
 
 const saveConfig = (config) => {
-  fs.writeFileSync("./config.json", JSON.stringify(config, null, 2), "utf8");
+  fs.writeFileSync("./config.json", JSON.stringify(config, null, 2));
 };
 
-// ===== API ROUTES =====
-
-// Stats
+// ===== ROUTES =====
 app.get("/api/stats", (req, res) => {
   res.json(errorTracker.getStats());
 });
 
-// Logs
 app.get("/api/logs", (req, res) => {
   const logs = logger.getTodayLogs();
-  res.json({
-    date: new Date().toISOString().split("T")[0],
-    logs: logs,
-    logCount: logs ? logs.length : 0,
-  });
+  res.json({ logs, count: logs?.length || 0 });
 });
 
-// Config GET
 app.get("/api/config", (req, res) => {
   res.json(getConfig());
 });
 
-// Config POST (mode change)
+// ✅ FIXED: was returning 404, now returns rollback history
+app.get("/api/rollback-history", (req, res) => {
+  res.json({ history: autoRollback.getRollbackHistory() });
+});
+
 app.post("/api/config", (req, res) => {
   const { mode } = req.body;
-
   if (!["stable", "test", "canary"].includes(mode)) {
     return res.status(400).json({ error: "Invalid mode" });
   }
 
-  try {
-    const config = getConfig();
-    config.mode = mode;
-    saveConfig(config);
-
-    console.log("[INFO] Mode changed to:", mode);
-
-    res.json({ success: true, mode });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Rollback history
-app.get("/api/rollback-history", (req, res) => {
-  res.json(autoRollback.getStats());
-});
-
-// Manual rollback
-app.post("/api/rollback", (req, res) => {
-  const result = autoRollback.manualRollback();
-  res.json(result);
-});
-
-// Health check
-app.get("/api/health", (req, res) => {
-  const stats = errorTracker.getStats();
   const config = getConfig();
+  config.mode = mode;
+  saveConfig(config);
 
-  res.json({
-    status: "ok",
-    mode: config.mode,
-    errorRate: parseFloat(stats.errorRatePercent),
-    uptime: stats.uptime,
-    totalRequests: stats.totalRequests,
-  });
-});
-
-// Reset stats
-app.post("/api/reset-stats", (req, res) => {
-  errorTracker.reset();
   res.json({ success: true });
 });
 
-// ===== 🤖 AI ANALYZE ROUTE - GROQ API =====
-app.post("/api/analyze", async (req, res) => {
+
+app.post("/api/analyze-logs", async (req, res) => {
   try {
-    const logs = logger.getTodayLogs() || [];
-    const stats = errorTracker.getStats();
+    const { logs } = req.body;
 
-    // Count errors by type and extract messages
-    const errorDetails = {};
-    logs.forEach(log => {
-      if (log.statusCode >= 400) {
-        const key = `${log.statusCode}`;
-        if (!errorDetails[key]) {
-          errorDetails[key] = {
-            count: 0,
-            messages: [],
-            backend: log.target?.includes('5001') ? 'Stable' : 'Test'
-          };
-        }
-        errorDetails[key].count++;
-        if (errorDetails[key].messages.length < 3) {
-          errorDetails[key].messages.push(log.responseBody?.message || log.responseBody?.error || 'Unknown');
-        }
-      }
-    });
-
-    const prompt = `Analyze REAL ERROR LOGS and extract USEFUL DETAILS.
-
-Total Requests: ${logs.length}
-Total Errors: ${logs.filter(l => l.statusCode >= 400).length}
-Error Rate: ${stats.errorRatePercent}
-
-ACTUAL ERROR DETAILS:
-${Object.entries(errorDetails).map(([code, details]) => 
-  `Error ${code} (${details.backend}): ${details.count} times\nMessages: ${details.messages.join(' | ')}`
-).join('\n\n')}
-
-TASK: Analyze REAL error messages and show 3 DIFFERENT error types.
-Extract specific causes from error messages.
-Provide actionable fixes.
-
-Format EXACTLY:
-ERROR_1_CODE: [code]
-ERROR_1_BACKEND: [Stable/Test]
-ERROR_1_FREQUENCY: [X times]
-ERROR_1_PERCENTAGE: [X%]
-ERROR_1_SEVERITY: [CRITICAL/HIGH/MEDIUM/LOW]
-ERROR_1_CAUSE: [Real cause from error message]
-ERROR_1_FIX: [Specific action]
-
-ERROR_2_CODE: [DIFFERENT code]
-ERROR_2_BACKEND: [Stable/Test]
-ERROR_2_FREQUENCY: [X times]
-ERROR_2_PERCENTAGE: [X%]
-ERROR_2_SEVERITY: [CRITICAL/HIGH/MEDIUM/LOW]
-ERROR_2_CAUSE: [Real cause from error message]
-ERROR_2_FIX: [Specific action]
-
-ERROR_3_CODE: [DIFFERENT code]
-ERROR_3_BACKEND: [Stable/Test]
-ERROR_3_FREQUENCY: [X times]
-ERROR_3_PERCENTAGE: [X%]
-ERROR_3_SEVERITY: [CRITICAL/HIGH/MEDIUM/LOW]
-ERROR_3_CAUSE: [Real cause from error message]
-ERROR_3_FIX: [Specific action]
-
-OVERALL_HEALTH: [Good/Fair/Poor]
-RECOMMENDATION: [Specific action]
-RISK_LEVEL: [LOW/MEDIUM/HIGH]`;
-
-    // GROQ API - READ FROM .env
-    const GROQ_API_KEY = process.env.GROQ_API_KEY;
-
-    if (!GROQ_API_KEY) {
-      console.warn("[AI] No GROQ_API_KEY in .env - using fallback");
-      return res.json({ result: getMockAnalysis() });
+    if (!logs || logs.length === 0) {
+      return res.status(400).json({ error: "No logs provided" });
     }
 
-    // Try Groq with timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const prompt = `
+You are a senior SRE.
 
-    try {
-      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+Analyze logs and give:
+- root cause
+- impact
+- fix
+- prevention
+- severity
+
+Logs:
+${logs.slice(-30).map(l =>
+  `Status:${l.statusCode} Path:${l.path} Msg:${typeof l.responseBody === "string"
+    ? l.responseBody
+    : JSON.stringify(l.responseBody)}`
+).join("\n")}
+`;
+
+    const response = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${GROQ_API_KEY}`,
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
         },
         body: JSON.stringify({
           model: "llama-3.1-8b-instant",
           messages: [{ role: "user", content: prompt }],
           temperature: 0.3,
-          max_tokens: 500,
         }),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error("[GROQ ERROR]", error);
-        throw new Error(`Groq error: ${response.status}`);
       }
+    );
 
-      const data = await response.json();
-      console.log("[AI] Groq analysis complete ✅");
-      return res.json({ result: data.choices[0].message.content });
-    } catch (groqErr) {
-      clearTimeout(timeoutId);
-      console.warn("[AI] Groq failed:", groqErr.message);
-      console.warn("[AI] Using fallback mock data");
-      
-      // FALLBACK to mock if Groq fails
-      return res.json({ result: getMockAnalysis() });
+    const data = await response.json();
+
+    if (!data.choices?.length) {
+      return res.status(500).json({ error: "Groq failed" });
     }
+
+    res.json({
+      result: data.choices[0].message.content,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Analysis failed" });
+  }
+});
+
+// ✅ DEBUG: force ingest all logs
+app.post("/api/debug/ingest", async (req, res) => {
+  const logs = logger.getTodayLogs();
+
+  const normalized = (logs || []).map((l) => ({
+    statusCode: l.statusCode || l.status || 200,
+    path: l.path || l.url || "unknown",
+    responseBody: l.responseBody || l.body || null,
+  }));
+
+  await ingestLogs(normalized);
+  res.json({ success: true, ingested: normalized.length });
+});
+
+// ===== 🤖 AI ANALYZE =====
+app.post("/api/analyze", async (req, res) => {
+  try {
+    const stats = errorTracker.getStats();
+    const errorRate = parseFloat(
+      stats.errorRatePercent || stats.errorRate || 0
+    );
+
+    let relevantLogs = [];
+
+    try {
+      relevantLogs = await retrieveRelevantLogs(
+        "errors failures crashes 500 502 503 504 timeout"
+      );
+      console.log("🔍 Retrieved logs:", relevantLogs.length);
+    } catch (err) {
+      console.error("[RAG ERROR]", err.message);
+    }
+
+    // ✅ FALLBACK if Pinecone empty
+    if (!relevantLogs || relevantLogs.length === 0) {
+      console.warn("⚠️ Using fallback logs");
+      relevantLogs = (logger.getTodayLogs() || []).slice(-5);
+    }
+
+    if (!relevantLogs.length) {
+      return res.json({ result: "No logs available" });
+    }
+
+    const prompt = `
+Analyze backend logs:
+
+${relevantLogs
+  .map(
+    (l) =>
+      `Status:${l.statusCode} Path:${l.path} Msg:${
+        l.responseBody?.message || l.responseBody || "Unknown"
+      }`
+  )
+  .join("\n")}
+
+Error Rate: ${errorRate}%
+
+Give STRICT output:
+
+ERROR_1_CODE:
+ERROR_1_BACKEND:
+ERROR_1_CAUSE:
+ERROR_1_FIX:
+
+ERROR_2_CODE:
+ERROR_2_BACKEND:
+ERROR_2_CAUSE:
+ERROR_2_FIX:
+
+ERROR_3_CODE:
+ERROR_3_BACKEND:
+ERROR_3_CAUSE:
+ERROR_3_FIX:
+
+OVERALL_HEALTH:
+RECOMMENDATION:
+RISK_LEVEL:
+`;
+
+    const response = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "llama-3.1-8b-instant",
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.3,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!data.choices) {
+      console.error("❌ GROQ ERROR:", data);
+      return res.json({ result: "AI failed" });
+    }
+
+    res.json({
+      result: data.choices[0].message.content,
+    });
   } catch (err) {
     console.error("[ANALYZE ERROR]", err.message);
     res.status(500).json({ error: "Analysis failed" });
   }
 });
 
-// Mock analysis data (fallback)
-function getMockAnalysis() {
-  return `ERROR_1_CODE: 500
-ERROR_1_BACKEND: Test
-ERROR_1_FREQUENCY: 15 times
-ERROR_1_PERCENTAGE: 60%
-ERROR_1_SEVERITY: CRITICAL
-ERROR_1_CAUSE: Test backend has bugs causing crashes
-ERROR_1_FIX: Rollback to stable version immediately
-
-ERROR_2_CODE: 502
-ERROR_2_BACKEND: Stable
-ERROR_2_FREQUENCY: 5 times
-ERROR_2_PERCENTAGE: 20%
-ERROR_2_SEVERITY: MEDIUM
-ERROR_2_CAUSE: Database connection pool exhausted
-ERROR_2_FIX: Restart database service
-
-ERROR_3_CODE: 504
-ERROR_3_BACKEND: Test
-ERROR_3_FREQUENCY: 5 times
-ERROR_3_PERCENTAGE: 20%
-ERROR_3_SEVERITY: MEDIUM
-ERROR_3_CAUSE: Request timeout from slow processing
-ERROR_3_FIX: Optimize code performance and increase timeout
-
-OVERALL_HEALTH: Poor
-RECOMMENDATION: Switch to stable mode and investigate test backend
-RISK_LEVEL: HIGH`;
-}
-
-// Capture response body
-proxy.on("proxyRes", function (proxyRes, req, res) {
+// ===== PROXY RESPONSE CAPTURE =====
+proxy.on("proxyRes", (proxyRes, req) => {
   let body = [];
 
-  proxyRes.on("data", function (chunk) {
-    body.push(chunk);
-  });
+  proxyRes.on("data", (chunk) => body.push(chunk));
 
-  proxyRes.on("end", function () {
+  proxyRes.on("end", () => {
     body = Buffer.concat(body).toString();
-
     try {
       req.responseBody = JSON.parse(body);
     } catch {
@@ -290,86 +261,73 @@ proxy.on("proxyRes", function (proxyRes, req, res) {
   });
 });
 
-// ===== PROXY LOGIC (KEEP LAST) =====
+// ===== PROXY =====
 app.use((req, res) => {
   const config = getConfig();
-  let target;
 
-  if (config.mode === "stable") {
-    target = config.stable_url;
-  } else if (config.mode === "test") {
-    target = config.test_url;
-  } else if (config.mode === "canary") {
-    const random = Math.random() * 100;
-    target =
-      random < config.canary_percent
+  let target =
+    config.mode === "test"
+      ? config.test_url
+      : config.mode === "canary"
+      ? Math.random() * 100 < config.canary_percent
         ? config.test_url
-        : config.stable_url;
-  } else {
-    target = config.stable_url;
-  }
+        : config.stable_url
+      : config.stable_url;
+
+  proxy.web(req, res, { target });
 
   res.on("finish", () => {
     const duration = Date.now() - req.startTime;
 
-    // EXTRACT DETAILED ERROR MESSAGE FROM RESPONSE
-    let detailedMessage = "";
-    if (req.responseBody && typeof req.responseBody === 'object') {
-      // Try to get the most useful message
-      if (req.responseBody.message) {
-        detailedMessage = req.responseBody.message;
-      } else if (req.responseBody.error) {
-        detailedMessage = req.responseBody.error;
-      } else if (req.responseBody.details) {
-        detailedMessage = JSON.stringify(req.responseBody.details);
-      }
-    }
-
-    // Log with detailed message
     logger.logRequest(
       req,
       res,
       duration,
       target,
       res.statusCode,
-      detailedMessage || req.responseBody
+      req.responseBody
     );
-    
+
     errorTracker.addRequest(res.statusCode);
 
     const stats = errorTracker.getStats();
-    // AUTO-ROLLBACK DISABLED FOR TESTING - UNCOMMENT TO ENABLE
-    // autoRollback.checkAndRollback(stats.errorRatePercent);
-  });
+    const errorRate = parseFloat(
+      stats.errorRatePercent || stats.errorRate || 0
+    );
 
-  proxy.web(req, res, { target }, (err) => {
-    console.error("[PROXY ERROR]", err.message);
-    res.status(502).json({ error: "Proxy error" });
+    console.log("📊 Error Rate:", errorRate);
+
+    // ✅ SAFE INGEST (non-blocking)
+    if (res.statusCode >= 400) {
+      const logEntry = {
+        statusCode: res.statusCode,
+        path: req.path || "unknown",
+        responseBody: req.responseBody || null,
+      };
+
+      Promise.resolve()
+        .then(() => ingestLogs([logEntry]))
+        .catch((e) => console.error("[INGEST ERROR]", e.message));
+    }
+
+    // ✅ AUTO ROLLBACK
+    if (stats.totalRequests > 20 && errorRate > 20) {
+      console.log("⚠️ Rolling back...");
+      autoRollback.checkAndRollback(errorRate);
+    }
   });
 });
 
-// Proxy error handler
+// ===== ERROR =====
 proxy.on("error", (err, req, res) => {
-  console.error("[PROXY CONNECTION ERROR]", err.message);
+  console.error("[PROXY ERROR]", err.message);
   if (!res.headersSent) {
     res.status(502).json({ error: "Bad Gateway" });
   }
 });
 
-// ===== START SERVER =====
+// ===== START =====
 app.listen(4000, () => {
-  console.log("\n🚀 Proxy running on http://localhost:4000");
-  console.log("📊 Dashboard APIs ready");
-  console.log("🤖 AI Analyze enabled (Groq API - via .env)");
-  console.log("✅ Reading GROQ_API_KEY from .env file");
-  console.log("\n[ENDPOINTS]");
-  console.log("GET  /api/stats");
-  console.log("GET  /api/logs");
-  console.log("GET  /api/config");
-  console.log("POST /api/config");
-  console.log("GET  /api/health");
-  console.log("GET  /api/rollback-history");
-  console.log("POST /api/rollback");
-  console.log("POST /api/reset-stats");
-  console.log("POST /api/analyze (Groq API - LIVE)\n");
+  console.log("🚀 Server running on http://localhost:4000");
+  console.log("✅ RAG + Pinecone + Groq READY");
 });

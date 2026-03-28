@@ -2,6 +2,7 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
+  padding-top: 80px; /* ✅ ADD THIS */
   background-color: #f7f8fa;
   min-height: 100vh;
 }
