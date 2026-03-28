@@ -1,191 +1,72 @@
 .analytics-section {
-  background-color: white;
-  border: 2px solid #e8eaed;
-  padding: 32px;
-  border-radius: 4px;
-  margin-bottom: 32px;
+  padding: 24px;
+  background: rgba(2, 14, 8, 0.82);
+  color: #00ff88;
+  font-family: 'Share Tech Mono', monospace;
 }
 
 .analytics-header {
-  margin-bottom: 32px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid #e8eaed;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
 }
 
-.analytics-header h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0;
+.section-tag {
+  color: #22d3ee;
 }
 
-/* Charts Grid - 2x2 Layout */
+/* GRID */
 .charts-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  perspective: 1200px;
 }
 
+/* CARD */
 .chart-card {
-  background-color: #f9fafb;
-  border: 1px solid #e8eaed;
-  border-radius: 4px;
-  padding: 20px;
-  transition: all 0.2s;
+  background: rgba(0, 10, 5, 0.7);
+  border: 1px solid rgba(0,255,136,0.15);
+  border-radius: 6px;
+  padding: 14px;
+  position: relative;
+  transition: 0.3s;
+  backdrop-filter: blur(18px);
+  transform-style: preserve-3d;
 }
 
 .chart-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  background-color: white;
+  transform: translateY(-6px) rotateX(4deg) rotateY(-4deg);
+  box-shadow: 0 20px 40px rgba(0,255,136,0.1);
 }
 
-.chart-card h3 {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0 0 16px 0;
-  padding-bottom: 12px;
-  border-bottom: 2px solid #e8eaed;
+/* scanline */
+.chart-card::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  top: -10%;
+  left: 0;
+  background: linear-gradient(90deg, transparent, #00ff88, transparent);
+  animation: scan 4s linear infinite;
 }
 
-.no-data {
-  height: 250px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #9ca3af;
-  font-size: 14px;
-  background-color: white;
-  border-radius: 4px;
+@keyframes scan {
+  0% { top: -10%; }
+  100% { top: 110%; }
 }
 
-/* Chart Legend - Error Distribution */
-.chart-legend {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 16px;
-  padding: 12px;
-  background-color: white;
-  border-radius: 4px;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #1f2937;
-}
-
-.legend-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  display: inline-block;
-}
-
-/* Comparison Stats - Stable vs Test */
-.comparison-stats {
-  display: flex;
-  gap: 16px;
-  margin-top: 16px;
-  padding: 12px;
-  background-color: white;
-  border-radius: 4px;
-}
-
-.stat {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.stat-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-}
-
-.stat-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: #1f2937;
-}
-
-.stat-requests {
-  font-size: 12px;
-  color: #9ca3af;
-}
-
-/* Severity Legend */
-.severity-legend {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 16px;
-  padding: 12px;
-  background-color: white;
-  border-radius: 4px;
-}
-
-.severity-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
+/* tooltip */
+.tooltip-box {
+  background: rgba(0, 15, 8, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0,255,136,0.3);
   padding: 8px;
-  background-color: #f9fafb;
-  border-radius: 3px;
+  font-size: 12px;
 }
 
-.severity-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-
-.severity-name {
-  font-weight: 600;
-  color: #1f2937;
-  flex: 1;
-}
-
-.severity-count {
-  font-weight: 700;
-  color: #1f2937;
-  min-width: 24px;
-  text-align: right;
-}
-
-/* Responsive - Stack on smaller screens */
-@media (max-width: 1200px) {
-  .charts-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  .analytics-section {
-    padding: 20px;
-  }
-
-  .chart-card {
-    padding: 16px;
-  }
-
-  .chart-card h3 {
-    font-size: 13px;
-  }
-
-  .comparison-stats {
-    flex-direction: column;
-  }
-
-  .severity-legend {
-    grid-template-columns: 1fr;
-  }
+.tooltip-title {
+  color: #22d3ee;
+  margin-bottom: 4px;
 }
