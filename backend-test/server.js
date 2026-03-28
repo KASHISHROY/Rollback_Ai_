@@ -1,5 +1,5 @@
 // ============================================
-// backend-test/server.js - REALISTIC ERROR GENERATOR
+// backend-test/server.js - REALISTIC ERROR GENERATOR.
 // ============================================
 // Real error messages that DBAs & developers care about
 
