@@ -3,6 +3,7 @@ import Analytics from './Analytics';
 import AIAnalyzer from './AIAnalyzer';
 import LogScene from './components/three/LogScene';
 import LogAnalysis from './LogAnalysis';
+
 // ── Cursor-reactive 3D background ────────────────────────────────────────
 function CursorBackground() {
   const canvasRef = useRef(null);
@@ -226,6 +227,17 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
+  // ✅ ALL hooks declared before any early return
+  const [serverStart] = useState(() => Date.now());
+  const [now, setNow] = useState(Date.now());
+
+  // Uptime ticker
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(tick);
+  }, []);
+
+  // Data fetcher
   useEffect(() => {
     setTimeout(() => setMounted(true), 100);
     const fetchData = async () => {
@@ -264,6 +276,12 @@ const Dashboard = () => {
     alert('Manual rollback triggered');
   };
 
+  // ✅ Uptime computed from local timer — never NaN
+  const uptimeMs  = now - serverStart;
+  const uptimeMin = Math.floor(uptimeMs / 60000);
+  const uptimeSec = Math.floor((uptimeMs % 60000) / 1000);
+
+  // ✅ Early return AFTER all hooks
   if (loading) return (
     <>
       <CursorBackground />
@@ -276,9 +294,6 @@ const Dashboard = () => {
       </div>
     </>
   );
-
-  const uptimeMin = stats ? Math.floor(stats.uptime / 60) : 0;
-  const uptimeSec = stats ? stats.uptime % 60 : 0;
 
   return (
     <>
@@ -306,7 +321,6 @@ const Dashboard = () => {
             <div style={styles.headerHex}>⬡</div>
             <div>
               <div style={styles.headerTitle}>CANARY DEPLOYMENT MATRIX</div>
-              {/* ✅ FIXED: was #2a5a52, now readable */}
               <div style={styles.headerSub}>Real-time infrastructure monitoring · v2.4.1</div>
             </div>
           </div>
@@ -314,7 +328,6 @@ const Dashboard = () => {
             <div style={styles.liveDot} />
             <span style={styles.liveText}>LIVE</span>
             <div style={styles.headerDivider} />
-            {/* ✅ FIXED: was #2a5a52, now readable */}
             <span style={styles.headerTime}>{new Date().toLocaleTimeString()}</span>
           </div>
           <div style={styles.headerBorderBottom} />
@@ -322,10 +335,10 @@ const Dashboard = () => {
 
         {stats && (
           <div style={styles.metricsGrid}>
-            <MetricCard label="TOTAL REQUESTS" value={stats.totalRequests} accent="#00dc9b" delay="0s" icon="⬡" />
-            <MetricCard label="TOTAL ERRORS" value={stats.totalErrors} accent="#ff3355" delay="0.1s" icon="⚠" />
-            <MetricCard label="ERROR RATE" value={stats.errorRatePercent} accent="#f59e0b" delay="0.2s" icon="%" />
-            <MetricCard label="UPTIME" value={`${uptimeMin}m ${uptimeSec}s`} accent="#00b4ff" delay="0.3s" icon="◈" />
+            <MetricCard label="TOTAL REQUESTS" value={stats.totalRequests}  accent="#00dc9b" delay="0s"   icon="⬡" />
+            <MetricCard label="TOTAL ERRORS"   value={stats.totalErrors}    accent="#ff3355" delay="0.1s" icon="⚠" />
+            <MetricCard label="ERROR RATE"     value={stats.errorRatePercent} accent="#f59e0b" delay="0.2s" icon="%" />
+            <MetricCard label="UPTIME"         value={`${uptimeMin}m ${uptimeSec}s`} accent="#00b4ff" delay="0.3s" icon="◈" />
           </div>
         )}
 
@@ -338,8 +351,8 @@ const Dashboard = () => {
             <SectionHeader title="Traffic Mode Control" tag="LIVE" />
             <div style={styles.modeGrid}>
               {[
-                { key: 'stable', label: 'STABLE', sub: '0% canary',   icon: '✓',  color: '#00dc9b' },
-                { key: 'test',   label: 'TEST',   sub: '100% canary', icon: '⚡', color: '#f59e0b' },
+                { key: 'stable', label: 'STABLE', sub: '90% canary',   icon: '✓',  color: '#00dc9b' },
+                { key: 'test',   label: 'TEST',   sub: '10% canary', icon: '⚡', color: '#f59e0b' },
                 { key: 'canary', label: 'CANARY', sub: '10% canary',  icon: '◈',  color: '#00b4ff' },
               ].map(m => (
                 <button key={m.key} onClick={() => changeMode(m.key)} style={{
@@ -357,7 +370,6 @@ const Dashboard = () => {
                 </button>
               ))}
             </div>
-            {/* ✅ FIXED: was #1a4040, now readable */}
             <div style={styles.modeStatus}>
               ACTIVE_MODE: <span style={{ color: '#00dc9b' }}>{config.mode.toUpperCase()}</span>
             </div>
@@ -374,7 +386,6 @@ const Dashboard = () => {
             <span style={{ fontSize: 18 }}>⏮</span>
             <span style={{ fontFamily: "'Orbitron', monospace", letterSpacing: 2 }}>EXECUTE ROLLBACK → STABLE</span>
           </button>
-          {/* ✅ FIXED: was #1a2030 (invisible), now readable */}
           <div style={styles.rollbackInfo}>AUTO-TRIGGER · threshold: error_rate &gt; 20%</div>
         </div>
 
@@ -445,7 +456,6 @@ const Dashboard = () => {
                         {log.target?.includes('5001') ? 'stable' : 'canary'}
                       </td>
                       <td style={{ ...styles.td, color: '#00b4ff' }}>{log.duration}</td>
-                      {/* ✅ FIXED: IP was #1a5a3a (invisible), now readable */}
                       <td style={{ ...styles.td, color: '#5aaa88', fontSize: 10 }}>{log.ip}</td>
                       <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: 10, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {typeof log.responseBody === 'string' ? log.responseBody.substring(0, 50) : 'ok'}
@@ -498,7 +508,7 @@ const styles = {
     margin: '0 auto',
     padding: '100px 24px 60px',
     fontFamily: "'Share Tech Mono', monospace",
-    color: '#8ecfbf', // ✅ FIXED: was #8ab4c0, bumped brightness
+    color: '#8ecfbf',
   },
   loading: {
     position: 'fixed', inset: 0, zIndex: 10,
@@ -528,7 +538,6 @@ const styles = {
     fontFamily: "'Orbitron', monospace", fontSize: 22, fontWeight: 900,
     color: '#e8f8f4', letterSpacing: 4, textShadow: '0 0 40px rgba(0,220,155,0.3)',
   },
-  // ✅ FIXED: was #2a5a52 (near-invisible), now readable
   headerSub: { fontSize: 11, color: '#6ab8a8', letterSpacing: 2, marginTop: 4 },
   headerRight: { display: 'flex', alignItems: 'center', gap: 12 },
   liveDot: {
@@ -538,7 +547,6 @@ const styles = {
   },
   liveText: { fontFamily: "'Orbitron', monospace", fontSize: 11, color: '#00dc9b', letterSpacing: 3 },
   headerDivider: { width: 1, height: 20, background: '#ffffff10' },
-  // ✅ FIXED: was #2a5a52, now readable
   headerTime: { fontSize: 12, color: '#6ab8a8', fontFamily: 'monospace' },
   headerBorderBottom: {
     position: 'absolute', bottom: 0, left: 0, right: 0, height: 1,
@@ -548,7 +556,6 @@ const styles = {
   metricsGrid: {
     display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32,
   },
-
   metricCard: {
     position: 'relative', padding: '24px 20px',
     background: 'rgba(0,8,16,0.4)',
@@ -567,7 +574,6 @@ const styles = {
     position: 'absolute', bottom: 0, right: 0, width: 12, height: 12,
     borderBottom: '2px solid var(--accent)', borderRight: '2px solid var(--accent)',
   },
-  // ✅ FIXED: was #1a4a50 (near-invisible), now readable
   metricLabel: { fontSize: 10, letterSpacing: 3, color: '#6ab8a8', fontFamily: "'Orbitron', monospace" },
   metricValue: { fontSize: 36, fontFamily: "'Orbitron', monospace", fontWeight: 900, lineHeight: 1 },
   metricBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 2 },
@@ -600,11 +606,9 @@ const styles = {
     padding: '20px 16px',
     background: 'rgba(255,255,255,0.02)',
     border: '1px solid rgba(255,255,255,0.08)',
-    // ✅ FIXED: was #3a6a62 (dim), now clearly readable
     color: '#7ecfbe', cursor: 'pointer',
     transition: 'all 0.2s ease', fontFamily: 'monospace',
   },
-  // ✅ FIXED: was #1a4040 (invisible), now readable
   modeStatus: { fontSize: 11, color: '#5aaa88', letterSpacing: 2, fontFamily: 'monospace' },
 
   rollbackBtn: {
@@ -616,12 +620,10 @@ const styles = {
     letterSpacing: 1, boxShadow: '0 0 20px #ff335522',
     transition: 'box-shadow 0.2s ease',
   },
-  // ✅ FIXED: was #1a2030 (invisible), now readable
   rollbackInfo: { fontSize: 11, color: '#5a7888', letterSpacing: 2, fontFamily: 'monospace' },
 
   tableWrap: { overflowX: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 12 },
-  // ✅ FIXED: was #0a4038 (nearly black on dark bg), now clearly visible
   th: {
     padding: '10px 12px', textAlign: 'left',
     fontFamily: "'Orbitron', monospace", fontSize: 9, letterSpacing: 2,
@@ -630,11 +632,9 @@ const styles = {
   },
   tr: { borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.15s' },
   trError: { background: 'rgba(255,51,85,0.04)' },
-  // ✅ FIXED: was #3a6a62 (dim), now clearly readable
   td: { padding: '10px 12px', color: '#8ecfbf', verticalAlign: 'middle' },
   badge: { padding: '2px 8px', fontSize: 11, fontFamily: 'monospace', display: 'inline-block' },
 
-  // ✅ FIXED: was #081818 (virtually black), now subtle but visible
   footer: {
     textAlign: 'center', padding: '24px 0',
     fontSize: 10, letterSpacing: 4, color: '#3a8878',

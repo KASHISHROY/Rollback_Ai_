@@ -1,4 +1,4 @@
-/* ===== AI ANALYZER — dark cyberpunk, matches Dashboard theme ===== */
+/* ===== AI ANALYZER — matches Dashboard theme ===== */
 
 .ai-analyzer-section {
   background: rgba(2, 14, 8, 0.82);
@@ -28,7 +28,8 @@
   content: '';
   position: absolute;
   top: 0; left: 0;
-  width: 2px; height: 100%;
+  width: 2px;
+  height: 100%;
   background: linear-gradient(180deg, #a78bfa, #22d3ee, transparent);
 }
 
@@ -37,6 +38,9 @@
   margin-bottom: 20px;
   padding-bottom: 14px;
   border-bottom: 1px solid rgba(0,255,136,0.1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .ai-header h2 {
@@ -46,47 +50,10 @@
   letter-spacing: 0.25em;
   text-transform: uppercase;
   color: #a78bfa;
-  margin: 0 0 10px 0;
+  margin: 0;
 }
 
-.ai-status-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* status pills */
-.ai-status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: 'Orbitron', monospace;
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  padding: 3px 10px;
-  border-radius: 2px;
-}
-
-.ai-pill-analyzing {
-  background: rgba(245,158,11,0.08);
-  border: 1px solid rgba(245,158,11,0.3);
-  color: #f59e0b;
-}
-
-.ai-pill-live {
-  background: rgba(0,255,136,0.06);
-  border: 1px solid rgba(0,255,136,0.25);
-  color: #00ff88;
-}
-
-.ai-pill-wait {
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.06);
-  color: #2a5a38;
-}
-
-.section-tag {
+.ai-header .section-tag {
   font-family: 'Share Tech Mono', monospace;
   font-size: 0.6rem;
   padding: 2px 8px;
@@ -98,55 +65,58 @@
   margin-left: auto;
 }
 
-/* blinking dot */
-.ai-blink-dot {
-  display: inline-block;
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: #f59e0b;
-  animation: blinkDot 1.2s ease-in-out infinite;
-}
-
-.ai-dot-green { background: #00ff88; }
-
-@keyframes blinkDot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.3; transform: scale(0.7); }
-}
-
-/* ===== SKELETON ===== */
-.ai-skeleton {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.ai-skel-card {
-  height: 110px;
+/* ===== ANALYZE BUTTON ===== */
+.analyze-btn {
+  width: 100%;
+  padding: 13px 20px;
+  background: rgba(167,139,250,0.07);
+  color: #a78bfa;
+  border: 1px solid rgba(167,139,250,0.4);
   border-radius: 3px;
-  background: linear-gradient(
-    90deg,
-    rgba(0,255,136,0.03) 0%,
-    rgba(0,255,136,0.08) 50%,
-    rgba(0,255,136,0.03) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.8s linear infinite;
-  border: 1px solid rgba(0,255,136,0.06);
+  font-family: 'Orbitron', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
 }
 
-@keyframes shimmer {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+.analyze-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(167,139,250,0.1), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.5s;
+}
+
+.analyze-btn:hover:not(:disabled) {
+  background: rgba(167,139,250,0.14);
+  box-shadow: 0 0 32px rgba(167,139,250,0.25);
+  color: #fff;
+  border-color: #a78bfa;
+}
+
+.analyze-btn:hover:not(:disabled)::before {
+  transform: translateX(100%);
+}
+
+.analyze-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* ===== ERROR MESSAGE ===== */
 .error-message {
-  background: rgba(255,51,85,0.07);
+  background: rgba(255,68,68,0.07);
   color: #ff4444;
   padding: 12px 16px;
   border-radius: 3px;
-  border: 1px solid rgba(255,51,85,0.3);
+  border: 1px solid rgba(255,68,68,0.3);
   border-left: 3px solid #ff4444;
   margin-bottom: 16px;
   font-size: 0.72rem;
@@ -165,12 +135,12 @@
 .error-card {
   background: rgba(0, 8, 4, 0.7);
   border: 1px solid rgba(0,255,136,0.1);
-  border-left: 3px solid;
+  border-left: 3px solid;               /* color set via inline style */
   border-radius: 3px;
   padding: 18px 20px;
   position: relative;
   overflow: hidden;
-  transition: box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .error-card::before {
@@ -178,11 +148,12 @@
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
 }
 
 .error-card:hover {
   box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+  border-color: rgba(0,255,136,0.2);
 }
 
 /* ── Error Header ── */
@@ -204,7 +175,9 @@
   min-width: 32px;
 }
 
-.error-code-section { flex: 1; }
+.error-code-section {
+  flex: 1;
+}
 
 .error-code-section h3 {
   font-family: 'Orbitron', monospace;
@@ -228,6 +201,9 @@
 }
 
 .error-severity {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-family: 'Orbitron', monospace;
   font-size: 0.6rem;
   font-weight: 700;
@@ -236,6 +212,7 @@
   background: rgba(0,0,0,0.4);
   border-radius: 2px;
   border: 1px solid rgba(255,255,255,0.07);
+  color: #c8ffd4;
   white-space: nowrap;
 }
 
@@ -254,7 +231,6 @@
   border-radius: 2px;
   font-size: 0.7rem;
   font-family: 'Share Tech Mono', monospace;
-  color: #5a9a6a;
 }
 
 .metric strong {
@@ -271,9 +247,9 @@
 .error-explanation {
   margin-bottom: 10px;
   padding: 12px 14px;
-  background: rgba(255,51,85,0.05);
+  background: rgba(255,68,68,0.05);
   border-radius: 2px;
-  border: 1px solid rgba(255,51,85,0.15);
+  border: 1px solid rgba(255,68,68,0.15);
   border-left: 2px solid #ff4444;
 }
 
@@ -428,13 +404,22 @@
   font-family: 'Share Tech Mono', monospace;
 }
 
+/* ===== LOADING PULSE ===== */
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 1; }
+}
+
+.analyze-btn:disabled {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 768px) {
-  .error-header  { flex-wrap: wrap; }
-  .error-metrics { flex-direction: column; }
-  .ai-status-row { flex-wrap: wrap; }
+  .error-header    { flex-wrap: wrap; }
+  .error-metrics   { flex-direction: column; }
 }

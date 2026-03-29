@@ -9,7 +9,6 @@ const ErrorTracker = require("./error-tracker");
 const AutoRollback = require("./auto-rollback");
 
 const { ingestLogs } = require("./rag/ingest");
-const { retrieveRelevantLogs } = require("./rag/retriever");
 
 const app = express();
 const proxy = httpProxy.createProxyServer({});
@@ -83,7 +82,6 @@ app.post("/api/analyze-logs", async (req, res) => {
       return res.status(400).json({ error: "No logs provided" });
     }
 
-    // Build error summary for the prompt
     const errorLogs = logs.filter(l => l.statusCode >= 400);
     const errorCounts = {};
     errorLogs.forEach(l => {
@@ -185,79 +183,94 @@ app.post("/api/debug/ingest", async (req, res) => {
   res.json({ success: true, ingested: normalized.length });
 });
 
-// ===== 🤖 AI ANALYZE =====
+// ===== 🤖 AI ANALYZE (no RAG — direct Groq call) =====
 app.post("/api/analyze", async (req, res) => {
   try {
     const stats = errorTracker.getStats();
-    const errorRate = parseFloat(
-      stats.errorRatePercent || stats.errorRate || 0
-    );
 
-    let relevantLogs = [];
-
-    try {
-      relevantLogs = await retrieveRelevantLogs(
-        "errors failures crashes 500 502 503 504 timeout"
-      );
-      console.log("🔍 Retrieved logs:", relevantLogs.length);
-    } catch (err) {
-      console.error("[RAG ERROR]", err.message);
+    // Guard: need at least 5 requests before analyzing
+    if (!stats.totalRequests || stats.totalRequests < 5) {
+      return res.json({ result: null });
     }
 
-    // ✅ FALLBACK if Pinecone empty
-    if (!relevantLogs || relevantLogs.length === 0) {
-      console.warn("⚠️ Using fallback logs");
-      relevantLogs = (logger.getTodayLogs() || []).slice(-5);
+    const errorRate = parseFloat(stats.errorRatePercent || stats.errorRate || 0);
+
+    // Pull real logs directly from logger — no RAG
+    const allLogs = logger.getTodayLogs() || [];
+
+    if (allLogs.length === 0) {
+      return res.json({ result: null });
     }
 
-    if (!relevantLogs.length) {
-      return res.json({ result: "No logs available" });
-    }
+    // Use last 50 logs; prioritize errors but include successes for context
+    const errorLogs  = allLogs.filter(l => (l.statusCode || l.status || 200) >= 400);
+    const recentLogs = [
+      ...errorLogs.slice(-40),
+      ...allLogs.filter(l => (l.statusCode || l.status || 200) < 400).slice(-10),
+    ].slice(-50);
 
-    const prompt = `
-Analyze backend logs:
+    // Compute per-status-code counts for richer context
+    const codeCounts = {};
+    errorLogs.forEach(l => {
+      const code = l.statusCode || l.status || 500;
+      codeCounts[code] = (codeCounts[code] || 0) + 1;
+    });
+    const codesSummary = Object.entries(codeCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([code, count]) => `${code}×${count}`)
+      .join(", ");
 
-${relevantLogs
-  .map(
-    (l) =>
-      `Status:${l.statusCode} Path:${l.path} Msg:${
-        l.responseBody?.message || l.responseBody || "Unknown"
-      }`
-  )
+    const prompt = `You are a senior SRE assistant analyzing live HTTP proxy logs.
+Respond ONLY in the exact structured format below — no extra text, no markdown, no explanations outside the fields.
+
+SYSTEM CONTEXT:
+Total requests today : ${allLogs.length}
+Total errors today   : ${errorLogs.length}
+Current error rate   : ${errorRate}%
+Error code breakdown : ${codesSummary || "none"}
+
+LOG SAMPLE (up to 50 entries, errors prioritized):
+${recentLogs
+  .map(l => {
+    const code    = l.statusCode || l.status || 200;
+    const path    = l.path || l.url || "unknown";
+    const target  = l.target || "";
+    const backend = target.includes("5001") ? "stable" : target.includes("5002") ? "canary" : "unknown";
+    const msg =
+      typeof l.responseBody === "string"
+        ? l.responseBody.substring(0, 100)
+        : l.responseBody?.message || l.responseBody?.error
+          ? (l.responseBody.message || l.responseBody.error).substring(0, 100)
+          : JSON.stringify(l.responseBody || "").substring(0, 100);
+    return `Status:${code} Path:${path} Backend:${backend} Msg:${msg}`;
+  })
   .join("\n")}
 
-Error Rate: ${errorRate}%
-
-Give STRICT output:
-
-ERROR_1_CODE:
-ERROR_1_BACKEND:
-ERROR_1_FREQUENCY:
-ERROR_1_PERCENTAGE:
-ERROR_1_SEVERITY:
-ERROR_1_CAUSE:
-ERROR_1_FIX:
-
-ERROR_2_CODE:
-ERROR_2_BACKEND:
-ERROR_2_FREQUENCY:
-ERROR_2_PERCENTAGE:
-ERROR_2_SEVERITY:
-ERROR_2_CAUSE:
-ERROR_2_FIX:
-
-ERROR_3_CODE:
-ERROR_3_BACKEND:
-ERROR_3_FREQUENCY:
-ERROR_3_PERCENTAGE:
-ERROR_3_SEVERITY:
-ERROR_3_CAUSE:
-ERROR_3_FIX:
-
-OVERALL_HEALTH:
-RECOMMENDATION:
-RISK_LEVEL:
-`;
+Return EXACTLY this structure (fill every field, no placeholders):
+ERROR_1_CODE: <most frequent HTTP error code>
+ERROR_1_BACKEND: <stable or canary>
+ERROR_1_FREQUENCY: <N occurrences>
+ERROR_1_PERCENTAGE: <X% of all requests>
+ERROR_1_SEVERITY: <CRITICAL or HIGH or MEDIUM or LOW>
+ERROR_1_CAUSE: <1 sentence root cause>
+ERROR_1_FIX: <1 sentence fix>
+ERROR_2_CODE: <second most frequent HTTP error code, or repeat ERROR_1_CODE if only one type>
+ERROR_2_BACKEND: <stable or canary>
+ERROR_2_FREQUENCY: <N occurrences>
+ERROR_2_PERCENTAGE: <X% of all requests>
+ERROR_2_SEVERITY: <CRITICAL or HIGH or MEDIUM or LOW>
+ERROR_2_CAUSE: <1 sentence root cause>
+ERROR_2_FIX: <1 sentence fix>
+ERROR_3_CODE: <third most frequent HTTP error code, or repeat if fewer than 3 types>
+ERROR_3_BACKEND: <stable or canary>
+ERROR_3_FREQUENCY: <N occurrences>
+ERROR_3_PERCENTAGE: <X% of all requests>
+ERROR_3_SEVERITY: <CRITICAL or HIGH or MEDIUM or LOW>
+ERROR_3_CAUSE: <1 sentence root cause>
+ERROR_3_FIX: <1 sentence fix>
+OVERALL_HEALTH: <good or fair or poor or critical>
+RECOMMENDATION: <1 sentence action to take>
+RISK_LEVEL: <low or medium or high or critical>`;
 
     const response = await fetch(
       "https://api.groq.com/openai/v1/chat/completions",
@@ -270,26 +283,25 @@ RISK_LEVEL:
         body: JSON.stringify({
           model: "llama-3.1-8b-instant",
           messages: [{ role: "user", content: prompt }],
-          temperature: 0.3,
+          temperature: 0.2,
         }),
       }
     );
 
     const data = await response.json();
 
-    if (!data.choices) {
+    if (!data.choices?.length) {
       console.error("❌ GROQ ERROR:", data);
-      return res.json({ result: "AI failed" });
+      return res.json({ result: null });
     }
 
-    res.json({
-      result: data.choices[0].message.content,
-    });
+    res.json({ result: data.choices[0].message.content });
   } catch (err) {
     console.error("[ANALYZE ERROR]", err.message);
     res.status(500).json({ error: "Analysis failed" });
   }
 });
+
 
 // ===== PROXY RESPONSE CAPTURE =====
 proxy.on("proxyRes", (proxyRes, req) => {
@@ -343,7 +355,7 @@ app.use((req, res) => {
 
     console.log("📊 Error Rate:", errorRate);
 
-    // ✅ SAFE INGEST (non-blocking)
+    // ✅ SAFE INGEST (non-blocking) — kept for /api/debug/ingest endpoint
     if (res.statusCode >= 400) {
       const logEntry = {
         statusCode: res.statusCode,
@@ -375,5 +387,5 @@ proxy.on("error", (err, req, res) => {
 // ===== START =====
 app.listen(4000, () => {
   console.log("🚀 Server running on http://localhost:4000");
-  console.log("✅ RAG + Pinecone + Groq READY");
+  console.log("✅ Direct Groq AI READY (no RAG)");
 });
